@@ -15,7 +15,34 @@ But research (Steam Community archaeology) revealed the whitelist: **21:9 is off
 
 So instead of fighting the game, we lie to the *monitor's identity*.
 
-## The trick
+## Two paths to the wide
+
+### Option A — gamescope nested 21:9 (no reboot, per-game) ⭐ current daily driver
+
+Keep the desktop at stock 2560x1440 and give *only Albion* a 21:9 reality.
+Steam → Albion → Properties → Launch Options:
+
+```
+gamemoderun gamescope -w 2560 -h 1080 -W 2560 -H 1440 -S fit -f --force-grab-cursor -- %command% -screen-width 2560 -screen-height 1080 -force-glcore
+```
+
+- `-w/-h` = the nested display Albion sees (2560x1080); `-W/-H` = your real output.
+  Gamescope owns the cursor plane, so the mouse jank you get from setting 1080 on a
+  1440p desktop (XWayland coordinate mismatch) is structurally impossible here.
+- `-f`, **not** `-b` — borderless floats as a misplaced undecorated window on KWin Wayland.
+- Args after `%command%` come LAST, so they beat the Qt launcher's injected
+  `-screen-width`/`-force-vulkan` — Unity honors the final flag.
+- `-force-glcore` = the updated OpenGL Core renderer. Drop it to stay on Vulkan.
+- Then set the resolution **in-game once**: Settings → Video → 2560x1080 appears at the
+  TOP of the dropdown (it's the gamescope nested mode). One click writes the whole
+  prefs → launcher-args → runtime chain. Never hand-edit PlayerPrefs — the launcher
+  rewrites them every launch.
+
+Known quirk: nested width == output width → fit scale computes to exactly 1.0 →
+gamescope TOP-ALIGNS the strip, so you get one 360px bar at the bottom instead of
+centered 180/180 letterbox. Cosmetic; no flag fixes it (gamescope 3.16.x).
+
+### Option B — the EDID forge (system-wide, the original trick)
 
 `drm.edid_firmware` — a kernel parameter that swaps a display's EDID at probe time.
 We hand the panel a forged EDID where the **preferred native mode is 2560x1080** (with a bonus
@@ -71,6 +98,8 @@ Backups of `limine.conf` are written next to the original before every edit.
   the game sees an ordinary 21:9 monitor and stays happy.
 - Letterbox vs stretch (black bars vs smeared pixels) is the **monitor OSD's** aspect setting,
   not Linux's.
+- Option A note: the gamescope path touches nothing on this list — no forge, no cmdline,
+  no reboot. Start there; forge only if you want 21:9 *everywhere*.
 
 ## The saga (abridged)
 
@@ -80,6 +109,8 @@ Backups of `limine.conf` are written next to the original before every edit.
 4. EDID forge at 2560x800 (32:10) → WORKS at the display level… game vetoes it mid-load 💀
 5. Research → 21:9 is whitelisted by Albion. Rebuild EDID at 2560x1080.
 6. `Desktop is 2560 x 1080 @ 120 Hz` — `requesting fullscreen 2560 x 1080` — **held.** 🏆
+7. Epilogue: desktop back to native 1440p, gamescope nests 2560x1080 per-game with
+   `-force-glcore` — clean mouse, zero system hacks. Both paths documented; pick your poison. 🎯
 
 ---
 
