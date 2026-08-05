@@ -42,6 +42,12 @@ Known quirk: nested width == output width → fit scale computes to exactly 1.0 
 gamescope TOP-ALIGNS the strip, so you get one 360px bar at the bottom instead of
 centered 180/180 letterbox. Cosmetic; no flag fixes it (gamescope 3.16.x).
 
+⚠️ **Field report (GTX 1080 Ti, NVIDIA 580.173.02, gamescope 3.16.24):** mouse feel in the
+nested session was *worse* than the forged native mode — gamescope on this stack composites
+the cursor through its own Vulkan layer instead of a hardware plane, and the latency lands
+right on the mouse. One clean attempt, rolled back; Option B remains the daily driver on
+this machine. On AMD/Intel (where gamescope is happiest) Option A may behave better — YMMV.
+
 ### Option B — the EDID forge (system-wide, the original trick)
 
 `drm.edid_firmware` — a kernel parameter that swaps a display's EDID at probe time.
