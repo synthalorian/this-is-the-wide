@@ -17,7 +17,7 @@ So instead of fighting the game, we lie to the *monitor's identity*.
 
 ## Two paths to the wide
 
-### Option A — gamescope nested 21:9 (no reboot, per-game) ⭐ current daily driver
+### Option A — gamescope nested 21:9 (no reboot, per-game)
 
 Keep the desktop at stock 2560x1440 and give *only Albion* a 21:9 reality.
 Steam → Albion → Properties → Launch Options:
@@ -48,7 +48,7 @@ the cursor through its own Vulkan layer instead of a hardware plane, and the lat
 right on the mouse. One clean attempt, rolled back; Option B remains the daily driver on
 this machine. On AMD/Intel (where gamescope is happiest) Option A may behave better — YMMV.
 
-### Option B — the EDID forge (system-wide, the original trick)
+### Option B — the EDID forge (system-wide) ⭐ current daily driver
 
 `drm.edid_firmware` — a kernel parameter that swaps a display's EDID at probe time.
 We hand the panel a forged EDID where the **preferred native mode is 2560x1080** (with a bonus
@@ -106,6 +106,15 @@ Backups of `limine.conf` are written next to the original before every edit.
   not Linux's.
 - Option A note: the gamescope path touches nothing on this list — no forge, no cmdline,
   no reboot. Start there; forge only if you want 21:9 *everywhere*.
+- **Kernel updates silently drop the forge.** limine-entry-tool regenerates the *active*
+  boot entries on every kernel bump, and the fresh cmdline has no `drm.edid_firmware`.
+  Symptom: after an update + reboot you're suddenly back at 2560x1440. Fix is one command —
+  `install.sh` is idempotent and only touches the active entries (snapshot entries still
+  carry the old param and must NOT be used as the "already installed" check; v1 of the
+  script grep'd the whole file and got fooled by exactly that):
+  ```bash
+  scripts/install.sh && reboot
+  ```
 
 ## The saga (abridged)
 
@@ -115,8 +124,11 @@ Backups of `limine.conf` are written next to the original before every edit.
 4. EDID forge at 2560x800 (32:10) → WORKS at the display level… game vetoes it mid-load 💀
 5. Research → 21:9 is whitelisted by Albion. Rebuild EDID at 2560x1080.
 6. `Desktop is 2560 x 1080 @ 120 Hz` — `requesting fullscreen 2560 x 1080` — **held.** 🏆
-7. Epilogue: desktop back to native 1440p, gamescope nests 2560x1080 per-game with
-   `-force-glcore` — clean mouse, zero system hacks. Both paths documented; pick your poison. 🎯
+7. Epilogue: gamescope nested attempt rolled back — on NVIDIA 580 the composited cursor
+   latency was worse than native. Forged EDID reinstated as the daily driver. 🎯
+8. Kernel 7.1.6 update regenerated the limine entries and dropped the EDID param →
+   surprise 1440p. install.sh hardened (active-entries-only, idempotent) so future
+   kernel bumps are a one-command re-apply.
 
 ---
 
