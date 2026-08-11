@@ -14,16 +14,18 @@ sudo cp "$REPO_DIR/edid/$EDID_NAME" "/usr/lib/firmware/edid/$EDID_NAME"
 
 echo "[2/3] patching $LIMINE (backup first)"
 # Only the ACTIVE entries matter: their cmdline contains "rootflags=subvol=/@ root="
-# (snapshot entries use "/@/.snapshots/..."). Kernel updates regenerate the active
-# entries via limine-entry-tool, which drops the param — so check those, not the
-# whole file (old snapshots still contain it and would fool a plain grep).
+# (snapshot entries use "/@/.snapshots/..."). Kernel updates regenerate ONE active
+# entry via limine-entry-tool and drop the param THERE — while an older active
+# entry may still carry it. Check EVERY active line: the old "any match = skip"
+# grep saw the surviving param on the stale entry and skipped the entry you
+# actually boot (bug hit 2026-08-11 after the 7.1.6 -> 7.1.8 upgrade).
 LIVE_ROOT="rootflags=subvol=/@ root="
-if sudo grep -F "$LIVE_ROOT" "$LIMINE" | grep -q "$PARAM"; then
-  echo "  param already present in active entries, skipping"
+if ! sudo grep -F "$LIVE_ROOT" "$LIMINE" | grep -v "$PARAM" | grep -qF "$LIVE_ROOT"; then
+  echo "  param already present in all active entries, skipping"
 else
   sudo cp "$LIMINE" "$LIMINE.bak-this-is-the-wide"
-  sudo sed -i "s|cmdline: quiet nowatchdog splash rw $LIVE_ROOT|cmdline: quiet nowatchdog splash rw $PARAM $LIVE_ROOT|" "$LIMINE"
-  echo "  injected into $(sudo grep -F "$LIVE_ROOT" "$LIMINE" | grep -c "$PARAM") active entr(ies)"
+  sudo sed -i "/rootflags=subvol=\\/@ root=/ { /drm.edid_firmware/! s|cmdline: quiet nowatchdog splash rw |cmdline: quiet nowatchdog splash rw $PARAM | }" "$LIMINE"
+  echo "  injected; active entries now carrying the param: $(sudo grep -F "$LIVE_ROOT" "$LIMINE" | grep -c "$PARAM")"
 fi
 
 echo "[3/3] done — REBOOT to apply"
