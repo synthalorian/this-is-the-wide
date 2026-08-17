@@ -132,7 +132,7 @@ Backups of `limine.conf` are written next to the original before every edit.
 
 ---
 
-Made by synthalorian 🎹🤺 with synthclaw 🎹🦞
+Made by synth 🎹🤺 with synthclaw 🎹🦞
 
 ---
 
