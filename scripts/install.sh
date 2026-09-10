@@ -12,7 +12,7 @@ echo "[1/3] installing EDID firmware"
 sudo mkdir -p /usr/lib/firmware/edid
 sudo cp "$REPO_DIR/edid/$EDID_NAME" "/usr/lib/firmware/edid/$EDID_NAME"
 
-echo "[2/3] patching $LIMINE (backup first)"
+echo "[2/4] patching $LIMINE (backup first)"
 # Only the ACTIVE entries matter: their cmdline contains "rootflags=subvol=/@ root="
 # (snapshot entries use "/@/.snapshots/..."). Kernel updates regenerate ONE active
 # entry via limine-entry-tool and drop the param THERE — while an older active
@@ -26,6 +26,13 @@ else
   sudo cp "$LIMINE" "$LIMINE.bak-this-is-the-wide"
   sudo sed -i "/rootflags=subvol=\\/@ root=/ { /drm.edid_firmware/! s|cmdline: quiet nowatchdog splash rw |cmdline: quiet nowatchdog splash rw $PARAM | }" "$LIMINE"
   echo "  injected; active entries now carrying the param: $(sudo grep -F "$LIVE_ROOT" "$LIMINE" | grep -c "$PARAM")"
+fi
+
+# Persist through regenerations: limine-entry-tool rebuilds /boot/limine.conf entries
+# from /etc/default/limine KERNEL_CMDLINE on every kernel update — the param MUST live there.
+if ! grep -q "$PARAM" /etc/default/limine; then
+  sudo sed -i "s|^KERNEL_CMDLINE\[default\]+=\"quiet nowatchdog splash rw |&$PARAM |" /etc/default/limine
+  echo "  persisted into /etc/default/limine KERNEL_CMDLINE"
 fi
 
 echo "[3/4] baking EDID into initramfs (amdgpu probes BEFORE rootfs mounts —"
