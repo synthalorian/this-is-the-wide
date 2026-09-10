@@ -3,7 +3,7 @@
 set -euo pipefail
 
 EDID_NAME="skg-2560x1080.bin"
-OUTPUT="HDMI-A-1"
+OUTPUT="DP-2" # SKG primary is wired to the RX 9070 XT's DP-2 (was HDMI-A-1 on the GTX 1080 Ti)
 PARAM="drm.edid_firmware=${OUTPUT}:edid/${EDID_NAME}"
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 LIMINE="/boot/limine.conf"
@@ -28,5 +28,13 @@ else
   echo "  injected; active entries now carrying the param: $(sudo grep -F "$LIVE_ROOT" "$LIMINE" | grep -c "$PARAM")"
 fi
 
-echo "[3/3] done — REBOOT to apply"
-echo "verify after boot: edid-decode /sys/class/drm/card1-${OUTPUT}/edid | grep 'DTD 1'"
+echo "[3/4] baking EDID into initramfs (amdgpu probes BEFORE rootfs mounts —"
+echo "      without this, 'Direct firmware load failed with error -2' at boot)"
+if ! grep -q "$EDID_NAME" /etc/mkinitcpio.conf; then
+  sudo sed -i "s|^FILES=(\(.*\))|FILES=(\1 /usr/lib/firmware/edid/$EDID_NAME)|" /etc/mkinitcpio.conf
+fi
+sudo mkinitcpio -P
+echo "  verify: lsinitcpio /boot/initramfs-linux-cachyos.img | grep $EDID_NAME"
+
+echo "[4/4] done — REBOOT to apply"
+echo "verify after boot: edid-decode /sys/class/drm/card1-${OUTPUT}/edid | grep 2560x1080"
