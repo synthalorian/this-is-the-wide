@@ -2,9 +2,12 @@
 
 *This is the wave. This is the wide.*
 
-Forging a **21:9 2560x1080 "native" mode** for a 2560x1440 monitor (SKG GMQ3225RVC, GTX 1080 Ti,
-CachyOS + KDE Plasma Wayland, limine bootloader) — so Albion Online officially *approves* of our
-lifestyle choices.
+Forging a **21:9 2560x1080 "native" mode** for a 2560x1440 monitor (SKG GMQ3225RVC) — so Albion
+Online officially *approves* of our lifestyle choices.
+
+Current rig: **AMD RX 9070 XT** (SKG wired to DP-2) + Ryzen 7 9800X3D, CachyOS + KDE Plasma
+Wayland, limine bootloader. Born on a GTX 1080 Ti; the forge survived the NVIDIA→AMD migration —
+re-run `scripts/install.sh` after kernel bumps (amdgpu also probes before rootfs mounts).
 
 ## The problem
 
@@ -42,11 +45,12 @@ Known quirk: nested width == output width → fit scale computes to exactly 1.0 
 gamescope TOP-ALIGNS the strip, so you get one 360px bar at the bottom instead of
 centered 180/180 letterbox. Cosmetic; no flag fixes it (gamescope 3.16.x).
 
-⚠️ **Field report (GTX 1080 Ti, NVIDIA 580.173.02, gamescope 3.16.24):** mouse feel in the
-nested session was *worse* than the forged native mode — gamescope on this stack composites
-the cursor through its own Vulkan layer instead of a hardware plane, and the latency lands
-right on the mouse. One clean attempt, rolled back; Option B remains the daily driver on
-this machine. On AMD/Intel (where gamescope is happiest) Option A may behave better — YMMV.
+⚠️ **Field report (GTX 1080 Ti, NVIDIA 580.173.02, gamescope 3.16.24 — old box, pre-migration):**
+mouse feel in the nested session was *worse* than the forged native mode — gamescope on that
+stack composited the cursor through its own Vulkan layer instead of a hardware plane, and the
+latency landed right on the mouse. One clean attempt, rolled back; Option B remains the daily
+driver. On AMD/Intel (where gamescope is happiest) Option A may behave better — worth a retry
+on the 9070 XT if you ever want per-game ultrawide without touching the forge — YMMV.
 
 ### Option B — the EDID forge (system-wide) ⭐ current daily driver
 
@@ -54,7 +58,8 @@ this machine. On AMD/Intel (where gamescope is happiest) Option A may behave bet
 We hand the panel a forged EDID where the **preferred native mode is 2560x1080** (with a bonus
 120Hz variant), all stock modes preserved. Result:
 
-- NVIDIA accepts it (proprietary driver rejects *custom* modes, but native EDID modes are gospel)
+- The driver stack accepts forged EDID as native gospel (proprietary NVIDIA rejected *custom*
+  modes but honors native EDID; on the RX 9070 XT + amdgpu it's live on DP-2 since 2026-09)
 - KWin auto-picks it as preferred
 - Albion's settings manager sees legit 21:9 and **holds it past the loading screen** ✅
 - Bonus FOV for spotting Caerleon gankers before they spot you
@@ -96,10 +101,14 @@ Backups of `limine.conf` are written next to the original before every edit.
 ## Warnings (read these, future me)
 
 - If the panel won't sync the forged mode you get a black screen **on that output**.
-  Keep a second monitor un-forged (HDMI-A-2 is never touched here) — that's your lifeline.
-- `video=HDMI-A-1:2560x1080@60` cmdline does **NOT** work: nvidia-drm ignores `video=`
-  and KWin re-applies its stored output config at login. EDID override is the way.
-- kscreen-doctor / KWin custom modes: **driver rejects all of them** on this stack (580.173.02).
+  Keep a second monitor un-forged on any other port (never touch the non-SKG output) — that's
+  your lifeline.
+- `video=HDMI-A-1:2560x1080@60` cmdline did **NOT** work on the old NVIDIA stack
+  (nvidia-drm ignores `video=`; KWin re-applies its stored output config at login). EDID
+  override is the way. On the 9070 XT the forge is deployed the same way — kernel param,
+  one command.
+- kscreen-doctor / KWin custom modes: **driver rejects all of them** on the old stack (580.173.02).
+  The forged EDID sidesteps this entirely — that's the whole point.
 - Do NOT patch the game binary — SBI anti-cheat. This setup is display-level only;
   the game sees an ordinary 21:9 monitor and stays happy.
 - Letterbox vs stretch (black bars vs smeared pixels) is the **monitor OSD's** aspect setting,
@@ -129,10 +138,13 @@ Backups of `limine.conf` are written next to the original before every edit.
 8. Kernel 7.1.6 update regenerated the limine entries and dropped the EDID param →
    surprise 1440p. install.sh hardened (active-entries-only, idempotent) so future
    kernel bumps are a one-command re-apply.
+9. **The rebirth (2026-09):** GTX 1080 Ti retired → **RX 9070 XT**. SKG moved from
+   HDMI-A-1 to **DP-2**. Same forge, same limine param, new `install.sh` output target —
+   `amdgpu` probes before rootfs mounts so the EDID lands in the initramfs the same way.
+   NVIDIA is gone; the wide lives on. 🏆
 
 ---
 
-Made by synth 🎹🤺 with blackclaw ⚫🦞
 
 ---
 
